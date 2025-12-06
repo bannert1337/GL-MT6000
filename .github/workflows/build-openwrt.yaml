@@ -97,13 +97,14 @@ jobs:
           chmod 755 ./files/usr/bin/upgrade_custom_openwrt
           mv -v builder_repo/${{ env.CONFIG_FILE }} .config
           
-          # ------------------------------------------------------------------
-          # FIX: Patch mt76 hash mismatch
-          # ------------------------------------------------------------------
+          # FIX: Permanently patch mt76 hash mismatch
           sed -i 's/1c83b379c6f9777ab0c1a8fb51d5fd739583c07f5db92816d21c61d04740cfda/229f5661f89c531c989c01d2a4e2035e3ee57aed70940478f09e702f50bb3e2b/' package/kernel/mt76/Makefile
           
-          make defconfig
+          # FIX: Permanently patch linux-firmware hash mismatch
+          sed -i 's/552d13d57011ee1c6e273cd435f7673581927a143cc4620f21c9647746f2cf2c/d67db0f8e2f823f63aed87ee0bb9af30fa1d2fc079e4e30426f968d941faa95d/' package/firmware/linux-firmware/Makefile
 
+          make defconfig
+          
       - name: Build firmware
         run: |
           make download -j$(nproc) || {
