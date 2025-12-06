@@ -29,22 +29,25 @@ jobs:
     steps:
       - name: Check for new commits in pesa1234 repo
         id: check_commits
-        # We explicitly map the token here to ensure it's available in this step
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # MODIFIED LINE BELOW: Added "oauth2:${GH_TOKEN}@" to the URL
-          remote_branch=$(git ls-remote https://oauth2:${GH_TOKEN}@github.com/${{ env.REMOTE_REPOSITORY }}.git "refs/heads/next-*" | sed -e 's|\(.*heads/\)||' | grep -vi 'test' | sort -V | tail -n1)
+          # ------------------------------------------------------------------------------------
+          # CHANGE: We use 'gh api' instead of 'git ls-remote'.
+          # This avoids authentication errors because the API allows reading public repos
+          # with the default token, whereas git-over-https validates strict token scopes.
+          # ------------------------------------------------------------------------------------
+          remote_branch=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/git/matching-refs/heads/next-" --jq '.[].ref' | sed -e 's|refs/heads/||' | grep -vi 'test' | sort -V | tail -n1)
           
+          # The rest of your logic remains exactly the same
           [ -n "$remote_branch" ] && latest_commit_sha=$(gh api "repos/${{ env.REMOTE_REPOSITORY }}/commits/${remote_branch}" --jq .sha)
           [ -z "$latest_commit_sha" ] && { echo "*** COULD NOT GET latest_commit_sha FROM remote_branch=$remote_branch ***" ; exit 1; }
           
-          # The rest remains the same...
           gh api "repos/${{ github.repository }}/releases/latest" --jq .body 2>/dev/null | grep -q "${latest_commit_sha}" && echo "new_commits=false" >> $GITHUB_OUTPUT || echo "new_commits=true" >> $GITHUB_OUTPUT
           
-          echo "remote_branch=${remote_branch}"
-          echo "release_prefix=${remote_branch%.rss*}"
-          echo "latest_commit_sha=$latest_commit_sha"
+          echo "Found Branch: $remote_branch"
+          echo "Commit SHA: $latest_commit_sha"
+          
           echo "remote_branch=${remote_branch}" >> $GITHUB_OUTPUT
           echo "release_prefix=${remote_branch%.rss*}" >> $GITHUB_OUTPUT
           echo "latest_commit_sha=$latest_commit_sha" >> $GITHUB_OUTPUT
