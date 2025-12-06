@@ -58,23 +58,16 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
     runs-on: self-hosted
     steps:
-      - name: Install dependencies
+      - name: Configure Git and Cleanup
         run: |
-          sudo apt remove -y '*cloud*' '*firefox*' '*chrome*' '*dotnet*' '*php*'
-          sudo apt update -y && sudo apt upgrade -y
-          # Added python3-pyelftools (CRITICAL for kernel build) and git-core
-          sudo apt install -y build-essential clang flex bison g++ gawk gettext \
-            libncurses-dev libssl-dev python3-setuptools python3-pyelftools \
-            rsync swig unzip zlib1g-dev file wget llvm git-core libelf-dev
-
-          sudo apt autoremove -y && sudo apt clean -y
-
-          # ------------------------------------------------------------------
-          # CRITICAL FIX: Force git to use HTTPS instead of git:// 
-          # This fixes the 'mt76' download failure
-          # ------------------------------------------------------------------
+          # Clean up any previous build artifacts to free space
+          rm -rf firmware sha256sums
+          
+          # Ensure Git uses HTTPS (Fixes mt76 download issues)
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git config --global url."https://".insteadOf "git://"
+          
+          # We don't need 'apt install' because we installed everything on the VM already!
 
       - name: Checkout remote repository
         uses: actions/checkout@v4
