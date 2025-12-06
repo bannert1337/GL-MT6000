@@ -58,16 +58,19 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || needs.check_commits.outputs.new_commits == 'true'
     runs-on: self-hosted
     steps:
-      - name: Configure Git and Cleanup
+      - name: Prepare Runner
         run: |
-          # Clean up any previous build artifacts to free space
+          # 1. Clean up previous build artifacts to ensure we have space
+          # (We keep dl/ and feeds/ to speed up subsequent builds, but clear firmware)
           rm -rf firmware sha256sums
           
-          # Ensure Git uses HTTPS (Fixes mt76 download issues)
+          # 2. Configure Git to use HTTPS (Crucial for OpenWrt 'mt76' download)
           git config --global url."https://github.com/".insteadOf "git@github.com:"
           git config --global url."https://".insteadOf "git://"
           
-          # We don't need 'apt install' because we installed everything on the VM already!
+          # 3. Report system status (Optional, good for debugging)
+          echo "CPU Governor: $(cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor)"
+          free -h
 
       - name: Checkout remote repository
         uses: actions/checkout@v4
